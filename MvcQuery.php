@@ -108,25 +108,39 @@ namespace application\plugin\mvcQuery
 			$additionalPartSQL = $queryObject->getAdditionalPartSQL();
 			$data = $queryObject->getWhere();
 			if(!$data) $data = array();
+			$limit=array('offset'=>null,'limit'=>null);
 			foreach($data as $key => $val)
 			{
 				if($key[0] == '_') // It's some meta data
 				{
-					if($key == "_limit" && is_numeric($val))
-					{
-						$additionalPartSQL .= " LIMIT $val";
-					}
-					
 					if($key == "_offset" && is_numeric($val))
 					{
-						$additionalPartSQL .= " OFFSET $val";
+						$limit['offset']=$val;
 					}
+					
+					if($key == "_limit" && is_numeric($val))
+					{
+						$limit['limit']=$val;
+					}
+					
+					
 				}
 				else
 				{
 					$keys[] = $key;
 					$vals[] = $val;
 					$where[$key] = $val;
+				}
+			}
+			if (!is_null($limit['limit']))
+			{
+				if (!is_null($limit['offset']))
+				{
+					$additionalPartSQL.='LIMIT '.$limit['offset'].','.$limit['limit'];
+				}
+				else
+				{
+					$additionalPartSQL.='LIMIT '.$limit['limit'];
 				}
 			}
 			
