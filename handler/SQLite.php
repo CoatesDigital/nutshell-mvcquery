@@ -140,7 +140,7 @@ SQL;
 				// Surround them in `ticks`?
 				$readColumnsRaw = (is_object($options));
 				
-				if($options->getReadColumnsRaw())
+				if(is_object($options) && $options->getReadColumnsRaw())
 				{
 					$columnsSQL = implode(",\n\t", $readColumns);
 				}
