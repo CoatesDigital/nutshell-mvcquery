@@ -85,10 +85,10 @@ namespace application\plugin\mvcQuery\handler
 			$dbPrefix = $this->getDbPrefix();
 			$query=
 <<<SQL
-			INSERT INTO {$dbPrefix}`{$this->model->name}`
-				({$keys})
-			VALUES
-				({$placeholders});
+INSERT INTO {$dbPrefix}`{$this->model->name}`
+	({$keys})
+VALUES
+	({$placeholders});
 SQL;
 			return $this->model->db->insert($query,$record);
 		}
@@ -113,18 +113,24 @@ SQL;
 		 * @param string $additionalPartSQL
 		 * @return Array
 		 */
-		public function read($whereKeyVals = array(), $readColumns = array(), $additionalPartSQL='', $options = array())
+		public function read($whereKeyVals = array(), $readColumns = array(), $additionalPartSQL='', $options=null)
 		{
+			// is there a "where"?
 			$whereKeySQL = '';
 			$whereKeyValues = array();
-				
-			// is there a "where"?
 			if (count($whereKeyVals)>0)
 			{
 				// filters by the given where
-				$this->getWhereSQL($whereKeyVals, $whereKeySQL, $whereKeyValues, $options);
+				$this->getWhereSQL($whereKeyVals, $whereKeySQL, $whereKeyValues);
 				$whereKeySQL = " WHERE ".$whereKeySQL;
 			} 
+			
+			// Is a joinPartSQL defined?
+			$joinPartSQL = '';
+			if(is_object($options))
+			{
+				$joinPartSQL = $options->getJoinPartSQL();
+			}
 			
 			// are columns to be read defined?
 			if (count($readColumns)>0) 
@@ -132,15 +138,15 @@ SQL;
 				// reads only selected columns
 				
 				// Surround them in `ticks`?
-				$readColumnsRaw = (is_array($options) && isset($options['readColumnsRaw']) && $options['readColumnsRaw']);
+				$readColumnsRaw = (is_object($options));
 				
-				if($readColumnsRaw)
+				if($options->getReadColumnsRaw())
 				{
-					$columnsSQL = implode(',', $readColumns);
+					$columnsSQL = implode(",\n\t", $readColumns);
 				}
 				else
 				{
-					$columnsSQL = '`' . implode('`,`', $readColumns) . '`';
+					$columnsSQL = '`' . implode("`,\n\t`", $readColumns) . '`';
 				}
 			} else {
 				// reads all columns
@@ -148,8 +154,17 @@ SQL;
 			}
 			
 			$dbPrefix = $this->getDbPrefix();
-			$query = " SELECT {$columnsSQL} FROM {$dbPrefix}`{$this->model->name}` {$whereKeySQL} {$additionalPartSQL} ";
 			
+			$query = 
+<<<SQL
+SELECT
+	{$columnsSQL}
+FROM
+	{$dbPrefix}`{$this->model->name}`
+	{$joinPartSQL}
+	{$whereKeySQL}
+	{$additionalPartSQL}
+SQL;
 			return $this->model->db->getResultFromQuery($query,$whereKeyValues);
 		}
 		
@@ -169,29 +184,25 @@ SQL;
 		 * @param array $whereKeyValues
 		 * @return string
 		 */
-		protected function getWhereSQL($whereKeyVals, &$whereKeySQL, &$whereKeyValues, $options=array())
+		protected function getWhereSQL($whereKeyVals, &$whereKeySQL, &$whereKeyValues)
 		{
 			$whereKeySQL = array();
 			$whereKeyValues = array();
 			
-			$comparator = '=';
-			if(isset($options['search']) && $options['search']) $comparator = ' LIKE '; 
-				
-			
-			//Quick update is possible if $whereKeyVals is numeric and PK is composed by only one column.
+			// Quick update is possible if $whereKeyVals is numeric and PK is composed by only one column.
 			if (is_numeric($whereKeyVals) && (count($this->model->primary)==1))
 			{
-				$whereKeySQL = " `{$this->model->primary[0]}` {$comparator} ? ";
+				$whereKeySQL = " `{$this->model->primary[0]}` = ? ";
 				$whereKeyValues[] = (int) $whereKeyVals;
 			}
-			//More specific keyval matching.
-			else if (is_array($whereKeyVals))
+			else if (is_array($whereKeyVals)) //More specific keyval matching.
 			{
-				$where=array();
+				$where = array();
 				foreach ($whereKeyVals as $key=>$value)
 				{
 					// If the val is an array, assume that the key is a comparator,
 					// and the value is the actual value
+					$comparator = '=';
 					if(is_array($value))
 					{
 						foreach($value as $comparator => $value){};
@@ -200,7 +211,7 @@ SQL;
 					$where[] = "`{$key}` {$comparator} ?";
 					$whereKeyValues[] = $value;
 				}
-				$whereKeySQL=implode(' AND ',$where);
+				$whereKeySQL = implode(' AND ', $where);
 			}
 			else
 			{
@@ -223,10 +234,14 @@ SQL;
 			$this->getWhereSQL($whereKeyVals, $whereKeySQL, $whereKeyValues);
 	
 			$dbPrefix = $this->getDbPrefix();
-			$query=<<<SQL
-			UPDATE {$dbPrefix}`{$this->model->name}`
-			SET {$set}
-			WHERE {$whereKeySQL};
+			$query =
+<<<SQL
+UPDATE
+	{$dbPrefix}`{$this->model->name}`
+SET
+	{$set}
+WHERE
+	{$whereKeySQL};
 SQL;
 			return $this->model->db->update($query,array_merge(array_values($updateKeyVals),$whereKeyValues));
 		}

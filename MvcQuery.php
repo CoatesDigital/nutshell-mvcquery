@@ -80,32 +80,6 @@ namespace application\plugin\mvcQuery
 			}
 		}
 		
-		public function update($updateKeyVals,$whereKeyVals)
-		{
-			return $this->handler->update($updateKeyVals,$whereKeyVals);
-		}
-	
-		public function read($whereKeyVals = array(), $readColumns = array(), $additionalPartSQL='', $options=array())
-		{
-			return $this->handler->read($whereKeyVals, $readColumns, $additionalPartSQL, $options);
-		}
-		
-		public function insert(Array $record, Array $fields=array())
-		{
-			return $this->handler->insert($record, $fields);
-		}
-		
-		public function delete($whereKeyVals, $options=array())
-		{
-			return $this->handler->delete($whereKeyVals, $options);
-		}
-		
-		public function showCreateTable()
-		{
-			// todo, check that this handler can do that!
-			return $this->handler->showCreateTable();
-		}
-		
 		/**
 		 * Pass me a object representing a Query.
 		 * It must have a 'table' value.
@@ -117,17 +91,18 @@ namespace application\plugin\mvcQuery
 		{
 			$this->checkQueryData($queryObject);
 			
-			$additionalPartSQL = $queryObject->getAdditionalPartSQL();
-				
 			// Create the model
 			$tableName = $queryObject->getTable();
 			$model = $this->model->$tableName;
 			
-			// Parse the 'where' part.
-			$where = array();
+			// Parse the 'where' part to get the 'where' and 'additionalPartSQL' arguments
 			$vals = array();
 			$keys = array();
-			foreach($queryObject->getWhere() as $key => $val)
+			$where = array();
+			$additionalPartSQL = $queryObject->getAdditionalPartSQL();
+			$data = $queryObject->getWhere();
+			if(!$data) $data = array();
+			foreach($data as $key => $val)
 			{
 				if($key[0] == '_') // It's some meta data
 				{
@@ -149,15 +124,12 @@ namespace application\plugin\mvcQuery
 				}
 			}
 			
+			// prepare the readColumns argument
+			$readColumns = $queryObject->getReadColumns();
+			
 			if($queryObject->getType() == 'select')
 			{
-				$options = array
-				(
-					'search'			=> $queryObject->isLoose(),
-					'readColumnsRaw'	=> $queryObject->getReadColumnsRaw()
-				);
-				$readColumns = $queryObject->getReadColumns();
-				$return = $model->read($where, $readColumns, $additionalPartSQL, $options);
+				$return = $model->read($where, $readColumns, $additionalPartSQL, $queryObject);
 			}
 			elseif($queryObject->getType() == 'insert')
 			{
@@ -169,8 +141,7 @@ namespace application\plugin\mvcQuery
 			}
 			elseif($queryObject->getType() == 'delete')
 			{
-				$options = array('search'=>$queryObject->isLoose());
-				$return = $model->delete($where, $options);
+				$return = $model->delete($where, $queryObject);
 			}
 			else
 			{
@@ -180,6 +151,32 @@ namespace application\plugin\mvcQuery
 			return $return;
 		}
 		
+		public function update($updateKeyVals,$whereKeyVals)
+		{
+			return $this->handler->update($updateKeyVals,$whereKeyVals);
+		}
+	
+		public function read($whereKeyVals = array(), $readColumns = array(), $additionalPartSQL='', $mvcQueryObject=null)
+		{
+			return $this->handler->read($whereKeyVals, $readColumns, $additionalPartSQL, $mvcQueryObject);
+		}
+		
+		public function insert($record, $fields=array())
+		{
+			return $this->handler->insert($record, $fields);
+		}
+		
+		public function delete($whereKeyVals, $mvcQueryObject=null)
+		{
+			return $this->handler->delete($whereKeyVals, $mvcQueryObject);
+		}
+		
+		public function showCreateTable()
+		{
+			// todo, check that this handler can do that!
+			return $this->handler->showCreateTable();
+		}
+		
 		private function checkQueryData($queryObject)
 		{
 			if(!$queryObject->getTable()) throw new MvcQueryException(MvcQueryException::NEEDS_TABLE);
@@ -187,4 +184,3 @@ namespace application\plugin\mvcQuery
 		}
 	}
 }
-?>
