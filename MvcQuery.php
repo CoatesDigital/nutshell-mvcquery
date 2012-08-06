@@ -109,6 +109,7 @@ namespace application\plugin\mvcQuery
 			$data = $queryObject->getWhere();
 			if(!$data) $data = array();
 			$limit=array('offset'=>null,'limit'=>null);
+			$sort=array('by'=>null,'dir'=>null);
 			foreach($data as $key => $val)
 			{
 				if($key[0] == '_') // It's some meta data
@@ -123,6 +124,15 @@ namespace application\plugin\mvcQuery
 						$limit['limit']=$val;
 					}
 					
+					if($key == "_sortBy" && is_string($val))
+					{
+						$sort['by']=str_replace("'", "`", $this->db->quote($val));
+					}
+					
+					if($key == "_sortDir" && is_string($val))
+					{
+						$sort['dir']=str_replace("'", "", $this->db->quote($val));
+					}
 					
 				}
 				else
@@ -132,6 +142,7 @@ namespace application\plugin\mvcQuery
 					$where[$key] = $val;
 				}
 			}
+			
 			if (!is_null($limit['limit']))
 			{
 				if (!is_null($limit['offset']))
@@ -141,6 +152,18 @@ namespace application\plugin\mvcQuery
 				else
 				{
 					$additionalPartSQL.='LIMIT '.$limit['limit'];
+				}
+			}
+			
+			if (!is_null($sort['by']))
+			{
+				if (!is_null($sort['dir']))
+				{
+					$additionalPartSQL.='ORDER BY '.$sort['by'].' '.$sort['dir'];
+				}
+				else
+				{
+					$additionalPartSQL.='ORDER BY '.$sort['by'];
 				}
 			}
 			
