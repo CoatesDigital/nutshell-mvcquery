@@ -91,9 +91,15 @@ namespace application\plugin\mvcQuery
 		{
 			$this->checkQueryData($queryObject);
 			
-			// Create the model
+			// Create the model. eg "base/User" becomes $this->model->base->User;
 			$tableName = $queryObject->getTable();
-			$model = $this->model->$tableName;
+			$parts = explode('/', $tableName);
+			$model = $this->model;
+			foreach($parts as $part)
+			{
+				$model = $model->$part;
+			}
+			
 			
 			// Parse the 'where' part to get the 'where' and 'additionalPartSQL' arguments
 			$vals = array();
