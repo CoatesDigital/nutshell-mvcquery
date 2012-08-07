@@ -44,22 +44,21 @@ namespace application\plugin\mvcQuery
 		
 		
 		/**
-		 * The name of the table to query.
-		 * Must represent a 'model' object.
-		 * @var String
+		 * The model to query.
+		 * Must be a 'model' object.
+		 * @var Model
 		 */
-		private $table = null;
+		private $model = null;
 		
-		public function setTable($table)
+		public function getModel()
 		{
-			$this->table = $table;
+		    return $this->model;
 		}
 		
-		public function getTable()
+		public function setModel($model)
 		{
-			return $this->table;
+		    $this->model = $model;
 		}
-		
 		
 		/**
 		 * An optional key->val object representing the 'where' part of the query.

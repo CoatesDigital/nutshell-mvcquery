@@ -90,15 +90,7 @@ namespace application\plugin\mvcQuery
 		public function query(MvcQueryObject $queryObject)
 		{
 			$this->checkQueryData($queryObject);
-			
-			// Create the model. eg "base/User" becomes $this->model->base->User;
-			$tableName = $queryObject->getTable();
-			$parts = explode('/', $tableName);
-			$model = $this->model;
-			foreach($parts as $part)
-			{
-				$model = $model->$part;
-			}
+			$model = $queryObject->getModel();
 			
 			
 			// Parse the 'where' part to get the 'where' and 'additionalPartSQL' arguments
@@ -222,7 +214,7 @@ namespace application\plugin\mvcQuery
 		
 		private function checkQueryData($queryObject)
 		{
-			if(!$queryObject->getTable()) throw new MvcQueryException(MvcQueryException::NEEDS_TABLE);
+			if(!$queryObject->getModel()) throw new MvcQueryException(MvcQueryException::NEEDS_TABLE);
 			if(!$queryObject->getType()) throw new MvcQueryException(MvcQueryException::NEEDS_TYPE);
 		}
 	}
