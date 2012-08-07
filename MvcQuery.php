@@ -135,27 +135,27 @@ namespace application\plugin\mvcQuery
 				}
 			}
 			
-			if (!is_null($limit['limit']))
-			{
-				if (!is_null($limit['offset']))
-				{
-					$additionalPartSQL.='LIMIT '.$limit['offset'].','.$limit['limit'];
-				}
-				else
-				{
-					$additionalPartSQL.='LIMIT '.$limit['limit'];
-				}
-			}
-			
 			if (!is_null($sort['by']))
 			{
 				if (!is_null($sort['dir']))
 				{
-					$additionalPartSQL.='ORDER BY '.$sort['by'].' '.$sort['dir'];
+					$additionalPartSQL.=' ORDER BY '.$sort['by'].' '.$sort['dir'];
 				}
 				else
 				{
-					$additionalPartSQL.='ORDER BY '.$sort['by'];
+					$additionalPartSQL.=' ORDER BY '.$sort['by'];
+				}
+			}
+			
+			if (!is_null($limit['limit']))
+			{
+				if (!is_null($limit['offset']))
+				{
+					$additionalPartSQL.=' LIMIT '.$limit['offset'].','.$limit['limit'];
+				}
+				else
+				{
+					$additionalPartSQL.=' LIMIT '.$limit['limit'];
 				}
 			}
 			
