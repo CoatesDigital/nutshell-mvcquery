@@ -186,9 +186,9 @@ namespace application\plugin\mvcQuery
 			return $return;
 		}
 		
-		public function update($updateKeyVals,$whereKeyVals)
+		public function update($updateKeyVals,$whereKeyVals, $additionalPartSQL='')
 		{
-			return $this->handler->update($updateKeyVals,$whereKeyVals);
+			return $this->handler->update($updateKeyVals,$whereKeyVals, $additionalPartSQL);
 		}
 	
 		public function read($whereKeyVals = array(), $readColumns = array(), $additionalPartSQL='', $mvcQueryObject=null)

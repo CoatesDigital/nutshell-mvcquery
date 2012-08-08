@@ -219,7 +219,7 @@ SQL;
 			}
 		}
 		
-		public function update($updateKeyVals,$whereKeyVals)
+		public function update($updateKeyVals, $whereKeyVals, $additionalPartSQL='')
 		{
 			//Create the set portion of the query.
 			$set=array();
@@ -241,7 +241,9 @@ UPDATE
 SET
 	{$set}
 WHERE
-	{$whereKeySQL};
+	{$whereKeySQL}
+	{$additionalPartSQL}
+;
 SQL;
 			return $this->model->db->update($query,array_merge(array_values($updateKeyVals),$whereKeyValues));
 		}
