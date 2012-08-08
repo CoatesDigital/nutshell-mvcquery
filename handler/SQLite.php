@@ -205,11 +205,25 @@ SQL;
 					$comparator = '=';
 					if(is_array($value))
 					{
-						foreach($value as $comparator => $value){};
+						reset($value);
+						$comparator = key($value);
+						$value = current($value);
 					}
 					
-					$where[] = "`{$key}` {$comparator} ?";
-					$whereKeyValues[] = $value;
+					switch($comparator) {
+						case MvcQueryObjectData::IN:
+							if(!is_array($value)) {
+								$value = array($value);
+							}
+							$where[] = "`{$key}` {$comparator} (" . implode(',', array_fill(0, count($value), '?')) . ")";
+							$whereKeyValues = array_merge($whereKeyValues, $value);
+						break;
+
+						default:
+							$where[] = "`{$key}` {$comparator} ?";
+							$whereKeyValues[] = $value;
+						break;
+					}
 				}
 				$whereKeySQL = implode(' AND ', $where);
 			}
