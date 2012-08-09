@@ -2,6 +2,7 @@
 namespace application\plugin\mvcQuery\handler
 {
 	use application\plugin\mvcQuery\MvcQueryException;
+	use application\plugin\mvcQuery\MvcQueryObjectData;
 	
 	/**
 	 * @author Timothy Chandler <tim.chandler@spinifexgroup.com>
