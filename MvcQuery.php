@@ -217,5 +217,16 @@ namespace application\plugin\mvcQuery
 			if(!$queryObject->getModel()) throw new MvcQueryException(MvcQueryException::NEEDS_TABLE);
 			if(!$queryObject->getType()) throw new MvcQueryException(MvcQueryException::NEEDS_TYPE);
 		}
+		
+		public function getModel($modelName)
+		{
+			$parts = explode('/', $modelName);
+			$model = $this->model;
+			foreach($parts as $part)
+			{
+				$model = $model->$part;
+			}
+			return $model;
+		}
 	}
 }
