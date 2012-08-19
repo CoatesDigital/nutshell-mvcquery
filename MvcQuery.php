@@ -14,6 +14,14 @@ namespace application\plugin\mvcQuery
 	 */
 	class MvcQuery extends Model
 	{
+
+		const MVC_QUERY_PLACE_HOLDER = '_mvcquery_place_holder';
+
+		const MVC_QUERY_VALUE = '_mvcquery_value';
+
+		const INSERT_DEFAULT = 1;
+
+		const INSERT_ASSOC = 2;
 		
 		public $dbName		=null;	  //dbName
 		public $name	 	=null;     // table name
@@ -48,6 +56,8 @@ namespace application\plugin\mvcQuery
 		 */
 		private $handler = null;
 		
+		public $insertType = self::INSERT_DEFAULT;
+
 		/**
 		 * Parent constructor sets up the DB connection, then we choose which Handler to use for generating the actual query.
 		 * The handler will set it's 'model' value to this model, so that it has access to the DB connection and so that
@@ -168,7 +178,18 @@ namespace application\plugin\mvcQuery
 			}
 			elseif($queryObject->getType() == 'insert')
 			{
-				$return = $model->insert($vals, $keys);
+				switch($model->insertType)
+				{
+					case self::INSERT_ASSOC:
+						$return = $model->insertAssoc($where);
+					break;
+
+					case self::INSERT_DEFAULT:
+						// fall through
+					default:
+						$return = $model->insert($vals, $keys);
+					break;
+				}
 			}
 			elseif($queryObject->getType() == 'update')
 			{
@@ -199,6 +220,11 @@ namespace application\plugin\mvcQuery
 		public function insert($record, $fields=array())
 		{
 			return $this->handler->insert($record, $fields);
+		}
+
+		public function insertAssoc($record)
+		{
+			return $this->handler->insertAssoc($record);
 		}
 		
 		public function delete($whereKeyVals, $mvcQueryObject=null)
