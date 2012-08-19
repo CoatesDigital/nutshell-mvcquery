@@ -287,7 +287,6 @@ WHERE
 	{$additionalPartSQL}
 ;
 SQL;
-var_dump($query);
 			return $this->model->db->update($query,array_merge(array_values($updateKeyVals),$whereKeyValues));
 		}
 		
