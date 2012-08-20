@@ -1,6 +1,7 @@
 <?php
 namespace application\plugin\mvcQuery\handler
 {
+	use application\plugin\mvcQuery\MvcQuery;
 	use application\plugin\mvcQuery\MvcQueryException;
 	use application\plugin\mvcQuery\MvcQueryObjectData;
 	
@@ -70,28 +71,15 @@ namespace application\plugin\mvcQuery\handler
 		 * @param array $fields
 		 * @return int
 		 */
-		public function insert(Array $record, Array $fields=array())
+		public function insert(Array $values, Array $fields=array())
 		{
 			// all fields (default) ?
 			if (count($fields)==0)
 			{
-				// this part of the code is intended to be fast.
-				$placeholders	=&$this->model->defaultInsertPlaceHolders;
-				$keys			=&$this->model->defaultInsertColumnsStr;
-			} else {
-				$placeholders = rtrim(str_repeat('?,',count($record)),',');
-				$keys         = '`' . implode('`,`',$fields) . '`';
+				$fields = array_keys($this->model->columns);
 			}
-			
-			$dbPrefix = $this->getDbPrefix();
-			$query=
-<<<SQL
-INSERT INTO {$dbPrefix}`{$this->model->name}`
-	({$keys})
-VALUES
-	({$placeholders});
-SQL;
-			return $this->model->db->insert($query,$record);
+
+			return $this->insertAssoc(array_combine($fields, $values));
 		}
 		
 		/**
@@ -102,7 +90,40 @@ SQL;
 		 */
 		public function insertAssoc(Array $record)
 		{
-			return $this->model->insert(array_values($record), array_keys($record));
+			// container for the place holders ("?")
+			// Note: they may be wrapped in function calls,
+			// so store in an array temporarily
+			$placeHoldersSQL = array();
+
+			foreach($record as $key => $value) {
+
+				// define the default place holder
+				$placeHolder = '?';
+
+				// if the value is an array with specific keys, 
+				// 		1) update the place holder
+				// 		2) update the value
+				if(is_array($value) && isset($value[MvcQuery::MVC_QUERY_PLACE_HOLDER]))
+				{
+					$placeHolder = $value[MvcQuery::MVC_QUERY_PLACE_HOLDER];
+					$record[$key] = $value[MvcQuery::MVC_QUERY_VALUE];
+				}
+
+				$placeHoldersSQL[] = $placeHolder;
+			}
+
+			$keysSQL = '`' . implode('`,`', array_keys($record)) . '`';
+
+			$placeHoldersSQL = implode(',', $placeHoldersSQL);
+
+			$dbPrefix = $this->getDbPrefix();
+			$query = <<<SQL
+INSERT INTO {$dbPrefix}`{$this->model->name}`
+	({$keysSQL})
+VALUES
+	({$placeHoldersSQL});
+SQL;
+			return $this->model->db->insert($query, array_values($record));
 		}
 		
 		/**
@@ -238,9 +259,15 @@ SQL;
 		{
 			//Create the set portion of the query.
 			$set=array();
-			foreach (array_keys($updateKeyVals) as $key)
+			foreach ($updateKeyVals as $key => $value)
 			{
-				$set[] = '`' . $key . '` = ?';
+				$placeHolder = '?';
+				if(is_array($value) && isset($value[MvcQuery::MVC_QUERY_PLACE_HOLDER]))
+				{
+					$placeHolder = $value[MvcQuery::MVC_QUERY_PLACE_HOLDER];
+					$updateKeyVals[$key] = $value[MvcQuery::MVC_QUERY_VALUE];
+				}
+				$set[] = '`' . $key . '` = ' . $placeHolder;
 			}
 			$set=implode(',',$set);
 
