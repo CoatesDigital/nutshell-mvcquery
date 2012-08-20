@@ -97,6 +97,7 @@ namespace application\plugin\mvcQuery
 			$vals = array();
 			$keys = array();
 			$where = array();
+			$aggregate = false;
 			$additionalPartSQL = $queryObject->getAdditionalPartSQL();
 			$data = $queryObject->getWhere();
 			if(!$data) $data = array();
@@ -126,6 +127,11 @@ namespace application\plugin\mvcQuery
 						$sort['dir']=str_replace("'", "", $this->db->quote($val));
 					}
 					
+					if($key == "_count" && $val)
+					{
+						$aggregate = 'count';
+					}
+					
 				}
 				else
 				{
@@ -134,6 +140,7 @@ namespace application\plugin\mvcQuery
 					$where[$key] = $val;
 				}
 			}
+			
 			
 			if (!is_null($sort['by']))
 			{
@@ -160,7 +167,20 @@ namespace application\plugin\mvcQuery
 			}
 			
 			// prepare the readColumns argument
-			$readColumns = $queryObject->getReadColumns();
+			if($aggregate)
+			{
+				$readColumns = array();
+				switch($aggregate)
+				{
+					case 'count':
+						$readColumns[] = "COUNT(1) as '_count'";
+						break;
+				}
+			}
+			else
+			{
+				$readColumns = $queryObject->getReadColumns();
+			}
 			
 			if($queryObject->getType() == 'select')
 			{
