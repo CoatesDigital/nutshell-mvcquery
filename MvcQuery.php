@@ -272,7 +272,46 @@ namespace application\plugin\mvcQuery
 			{
 				$model = $model->$part;
 			}
+			$model = $this->checkForTransactionTable($model);
 			return $model;
+		}
+		
+		public function startTransaction($modelNames)
+		{
+			
+			foreach($modelNames as $modelName)
+			{
+				$model			= $this->getModel($modelName);
+				$tableName		= $model->name;
+				$tempTableName	= $this->getTemporaryTableName($model);
+				
+				// Create the temporary tables
+				$query = "DROP TABLE IF EXISTS {$tempTableName}";
+				$this->db->getResultFromQuery($query);
+				
+				$query = "CREATE TABLE {$tempTableName} AS (SELECT * FROM {$tableName})";
+				$this->db->getResultFromQuery($query);
+			}
+		}
+		
+		public function checkForTransactionTable($model)
+		{
+			$tempTableName	= $this->getTemporaryTableName($model);
+			$dbName = Nutshell::getInstance()->config->plugin->Db->connections->{Nutshell::getInstance()->config->plugin->Mvc->connection}->database;
+			$query = "SHOW TABLES FROM {$dbName} LIKE '{$tempTableName}'";
+			$result = $this->db->getResultFromQuery($query);
+			if(sizeof($result)) $model->name = $tempTableName;
+			return $model;
+		}
+		
+		public function getTemporaryTableName($model)
+		{
+			return $model->name.'_temp_'.$this->plugin->Auth->getUserID();
+		}
+		
+		public function endTransaction($transactionID)
+		{
+			
 		}
 	}
 }
