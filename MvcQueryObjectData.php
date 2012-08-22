@@ -25,5 +25,6 @@ namespace application\plugin\mvcQuery
 		const GREATER_THAN	= '>';
 		const LESS_THAN		= '<';
 		const IN			= 'IN';
+		const IS			= 'IS';
 	}
 }
