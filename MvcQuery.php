@@ -401,8 +401,9 @@ namespace application\plugin\mvcQuery
 		{
 			foreach($modelNames as $modelName)
 			{
-				$model				= $this->getModel($modelName);
-				$tempTableName		= $model->name;
+				$model = $this->getModel($modelName);
+				if(!$model->originalName) return false;
+				$tempTableName = $model->name;
 				
 				// drop the temp table
 				$query = "DROP TABLE IF EXISTS {$tempTableName}";
@@ -418,9 +419,14 @@ namespace application\plugin\mvcQuery
 		{
 			foreach($modelNames as $modelName)
 			{
-				$model				= $this->getModel($modelName);
+				$model	= $this->getModel($modelName);
+				if(!$model->originalName) return false;
 				$originalTableName	= $model->originalName;
 				$tempTableName		= $model->name;
+				
+				// unsecure
+				$query = "SET FOREIGN_KEY_CHECKS = 0";
+				$this->db->getResultFromQuery($query);
 				
 				// drop the original table
 				$query = "DROP TABLE IF EXISTS {$originalTableName}";
@@ -428,6 +434,10 @@ namespace application\plugin\mvcQuery
 				
 				// rename the temp into the real one
 				$query = "RENAME TABLE {$tempTableName} TO {$originalTableName}";
+				$this->db->getResultFromQuery($query);
+				
+				// resecure
+				$query = "SET FOREIGN_KEY_CHECKS = 1";
 				$this->db->getResultFromQuery($query);
 			}
 		}
