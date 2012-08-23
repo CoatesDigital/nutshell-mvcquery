@@ -224,6 +224,9 @@ SQL;
 				$where = array();
 				foreach ($whereKeyVals as $key=>$value)
 				{
+					$dbPrefix = $this->getDbPrefix();
+					$key = "{$dbPrefix}{$this->model->name}.`{$key}`";
+					
 					// If the val is an array, assume that the key is a comparator,
 					// and the value is the actual value
 					$comparator = '=';
@@ -239,12 +242,12 @@ SQL;
 							if(!is_array($value)) {
 								$value = array($value);
 							}
-							$where[] = "`{$key}` {$comparator} (" . implode(',', array_fill(0, count($value), '?')) . ")";
+							$where[] = "{$key} {$comparator} (" . implode(',', array_fill(0, count($value), '?')) . ")";
 							$whereKeyValues = array_merge($whereKeyValues, $value);
 						break;
 
 						default:
-							$where[] = "`{$key}` {$comparator} ?";
+							$where[] = "{$key} {$comparator} ?";
 							$whereKeyValues[] = $value;
 						break;
 					}
