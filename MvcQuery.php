@@ -144,6 +144,8 @@ namespace application\plugin\mvcQuery
 			$keys = array();
 			$where = array();
 			$aggregate = false;
+			$aggregateVal = false;
+			$debug = false;
 			$additionalPartSQL = $queryObject->getAdditionalPartSQL();
 			$data = $queryObject->getWhere();
 			if(!$data) $data = array();
@@ -176,6 +178,29 @@ namespace application\plugin\mvcQuery
 					if($key == "_count" && $val)
 					{
 						$aggregate = 'count';
+					}
+					
+					if($key == "_min" && $val)
+					{
+						$aggregate = 'min';
+						$aggregateVal = $val;
+					}
+					
+					if($key == "_max" && $val)
+					{
+						$aggregate = 'max';
+						$aggregateVal = $val;
+					}
+					
+					if($key == "_avg" && $val)
+					{
+						$aggregate = 'avg';
+						$aggregateVal = $val;
+					}
+					
+					if($key == '_debug' && $val)
+					{
+						$debug = true;
 					}
 					
 				}
@@ -221,6 +246,15 @@ namespace application\plugin\mvcQuery
 					case 'count':
 						$readColumns[] = "COUNT(1) as '_count'";
 						break;
+					case 'min':
+						$readColumns[] = "MIN({$aggregateVal}) as '_min'";
+						break;
+					case 'max':
+						$readColumns[] = "MAX({$aggregateVal}) as '_max'";
+						break;
+					case 'avg':
+						$readColumns[] = "AVG({$aggregateVal}) as '_avg'";
+						break;
 				}
 			}
 			else
@@ -258,6 +292,11 @@ namespace application\plugin\mvcQuery
 			else
 			{
 				throw new MvcQueryException(MvcQueryException::INVALID_TYPE, " [".$queryObject->getType()."] is invalid.");
+			}
+			
+			if($debug && Nutshell::getInstance()->config->application->mode=='development')
+			{
+				$return = array($this->db->getLastQueryObject());
 			}
 			
 			return $return;
