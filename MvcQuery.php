@@ -419,6 +419,15 @@ namespace application\plugin\mvcQuery
 			return $model;
 		}
 		
+		private function checkTableForTransaction($tableName)
+		{
+			if($this->inTransactionState($tableName))
+			{
+				return $this->getTemporaryTableName($tableName);
+			}
+			return $tableName;
+		}
+		
 		/**
 		 * Modifies a query to update it's table name references, if the model is in a 
 		 * transactional state
@@ -487,6 +496,11 @@ namespace application\plugin\mvcQuery
 		/*********************
 		 * Utility Functions *
 		 *********************/
+		
+		public function getTableName()
+		{
+			return $this->checkTableForTransaction($this->name);
+		}
 		
 		public function getModel($modelName, $checkTransaction=true)
 		{
