@@ -165,6 +165,7 @@ namespace application\plugin\mvcQuery
 						$limit['limit']=$val;
 					}
 					
+					$sort['by'] = '1';
 					if($key == "_sortBy" && is_string($val))
 					{
 						$sort['by']=str_replace("'", "`", $this->db->quote($val));
