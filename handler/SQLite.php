@@ -148,11 +148,18 @@ SQL;
 				$whereKeySQL = " WHERE ".$whereKeySQL;
 			} 
 			
-			// Is a joinPartSQL defined?
+			// Is a additional SQL parts?
 			$joinPartSQL = '';
+			$additionalWhereSQL = '';
 			if(is_object($options))
 			{
 				$joinPartSQL = $options->getJoinPartSQL();
+				
+				$additionalWhereSQL = $options->getAdditionalWhereSQL();
+				if($additionalWhereSQL)
+				{
+					$additionalWhereSQL = ($whereKeySQL ? ' AND ' : ' WHERE ') . $additionalWhereSQL;
+				}
 			}
 			
 			// are columns to be read defined?
@@ -186,6 +193,7 @@ FROM
 	{$dbPrefix}`{$this->model->name}`
 	{$joinPartSQL}
 	{$whereKeySQL}
+	{$additionalWhereSQL}
 	{$additionalPartSQL}
 SQL;
 			$query = $this->model->checkQueryForTransaction($query, $this->model);

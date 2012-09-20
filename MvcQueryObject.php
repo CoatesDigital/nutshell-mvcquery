@@ -158,5 +158,22 @@ namespace application\plugin\mvcQuery
 			return $this->readColumnsRaw;
 		}
 		
+		
+		/**
+		 * Additional SQL to perform after the WHERE clause.
+		 * Either "WHERE" or "AND" will be appended to this
+		 */
+		private $additionalWhereSQL = '';
+		
+		public function getAdditionalWhereSQL()
+		{
+		    return $this->additionalWhereSQL;
+		}
+		
+		public function setAdditionalWhereSQL($additionalWhereSQL)
+		{
+		    $this->additionalWhereSQL = $additionalWhereSQL;
+		}
+		
 	}
 }
