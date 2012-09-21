@@ -170,6 +170,15 @@ namespace application\plugin\mvcQuery
 					{
 						$sort['by']=str_replace("'", "`", $this->db->quote($val));
 					}
+					if($key == "_sortBy" && is_array($val))
+					{
+						$sort['by'] = array();
+						foreach($val as $col)
+						{
+							$sort['by'][] = str_replace("'", "`", $this->db->quote($col));
+						}
+						$sort['by'] = implode(', ', $sort['by']);
+					}
 					
 					if($key == "_sortDir" && is_string($val))
 					{
