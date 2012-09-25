@@ -150,7 +150,7 @@ namespace application\plugin\mvcQuery
 			$data = $queryObject->getWhere();
 			if(!$data) $data = array();
 			$limit=array('offset'=>null,'limit'=>null);
-			$sort=array('by'=>null,'dir'=>null);
+			$sort=array('by'=>1,'dir'=>null);
 			foreach($data as $key => $val)
 			{
 				if($key[0] == '_') // It's some meta data
@@ -165,7 +165,6 @@ namespace application\plugin\mvcQuery
 						$limit['limit']=$val;
 					}
 					
-					$sort['by'] = '1';
 					if($key == "_sortBy" && is_string($val))
 					{
 						$sort['by']=str_replace("'", "`", $this->db->quote($val));
