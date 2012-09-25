@@ -15,12 +15,30 @@ namespace application\plugin\mvcQuery
 	class MvcQuery extends Model
 	{
 		
+		/*************
+		 * Constants *
+		 *************/
+		
+		const MVC_QUERY_PLACE_HOLDER	= '_mvcquery_place_holder';
+		const MVC_QUERY_VALUE			= '_mvcquery_value';
+		const INSERT_DEFAULT			= 1;
+		const INSERT_ASSOC				= 2;
+		
+		
+		
+		
+		
+		/*********************
+		 * Public Attributes *
+		 *********************/
+		
 		public $dbName		=null;	  //dbName
 		public $name	 	=null;     // table name
 		public $primary	   	=array();  // array with primary keys.
 		public $primary_ai 	=true;     // is the pk auto increment? Only works if count($primary) == 1
 		public $columns	   	=array();  // array with columns
 		public $autoCreate 	=true;     // should create the table if it doesn't exist?
+		public $insertType	=self::INSERT_DEFAULT;
 		
 		public $types		=array();
 		public $columnNames	=array(); // stores column names
@@ -39,6 +57,14 @@ namespace application\plugin\mvcQuery
 		public $db = null;
 		
 		
+		
+		
+		
+		
+		/**********************
+		 * Private Properties *
+		 **********************/
+		
 		/**
 		 * This is one of the handlers from my handlers folder.
 		 * It does the query.
@@ -47,6 +73,16 @@ namespace application\plugin\mvcQuery
 		 * @var MySQL|SQLite
 		 */
 		private $handler = null;
+		
+
+
+		
+		
+		
+		
+		/*******************
+		 * The constructor *
+		 *******************/
 		
 		/**
 		 * Parent constructor sets up the DB connection, then we choose which Handler to use for generating the actual query.
@@ -62,9 +98,9 @@ namespace application\plugin\mvcQuery
 			require_once(__DIR__._DS_.'handler'._DS_.'SQLite.php');
 			require_once(__DIR__._DS_.'handler'._DS_.'MySQL.php');
 		
-			$config = Nutshell::getInstance()->config;
-			$connectionName = $config->plugin->Mvc->connection;
-			$handlerName = $config->plugin->Db->connections->$connectionName->handler;
+			$config			= Nutshell::getInstance()->config;
+			$connectionName	= $config->plugin->Mvc->connection;
+			$handlerName	= $config->plugin->Db->connections->$connectionName->handler;
 			
 			if($handlerName == 'mysql')
 			{
@@ -79,6 +115,16 @@ namespace application\plugin\mvcQuery
 				MvcQueryException(MvcQueryException::INVALID_HANDLER, $connectionName, $handlerName);
 			}
 		}
+		
+		
+		
+		
+		
+		
+		/********************
+		 * The big function *
+		 ********************/
+		
 		
 		/**
 		 * Pass me a object representing a Query.
@@ -97,11 +143,14 @@ namespace application\plugin\mvcQuery
 			$vals = array();
 			$keys = array();
 			$where = array();
+			$aggregate = false;
+			$aggregateVal = false;
+			$debug = false;
 			$additionalPartSQL = $queryObject->getAdditionalPartSQL();
 			$data = $queryObject->getWhere();
 			if(!$data) $data = array();
 			$limit=array('offset'=>null,'limit'=>null);
-			$sort=array('by'=>null,'dir'=>null);
+			$sort=array('by'=>1,'dir'=>null);
 			foreach($data as $key => $val)
 			{
 				if($key[0] == '_') // It's some meta data
@@ -120,10 +169,48 @@ namespace application\plugin\mvcQuery
 					{
 						$sort['by']=str_replace("'", "`", $this->db->quote($val));
 					}
+					if($key == "_sortBy" && is_array($val))
+					{
+						$sort['by'] = array();
+						foreach($val as $col)
+						{
+							if($col) $sort['by'][] = str_replace("'", "`", $this->db->quote($col));
+						}
+						$sort['by'] = implode(', ', $sort['by']);
+						if(!$sort['by']) $sort['by']=1;
+					}
 					
 					if($key == "_sortDir" && is_string($val))
 					{
 						$sort['dir']=str_replace("'", "", $this->db->quote($val));
+					}
+					
+					if($key == "_count" && $val)
+					{
+						$aggregate = 'count';
+					}
+					
+					if($key == "_min" && $val)
+					{
+						$aggregate = 'min';
+						$aggregateVal = $val;
+					}
+					
+					if($key == "_max" && $val)
+					{
+						$aggregate = 'max';
+						$aggregateVal = $val;
+					}
+					
+					if($key == "_avg" && $val)
+					{
+						$aggregate = 'avg';
+						$aggregateVal = $val;
+					}
+					
+					if($key == '_debug' && $val)
+					{
+						$debug = true;
 					}
 					
 				}
@@ -134,6 +221,7 @@ namespace application\plugin\mvcQuery
 					$where[$key] = $val;
 				}
 			}
+			
 			
 			if (!is_null($sort['by']))
 			{
@@ -160,7 +248,29 @@ namespace application\plugin\mvcQuery
 			}
 			
 			// prepare the readColumns argument
-			$readColumns = $queryObject->getReadColumns();
+			if($aggregate)
+			{
+				$readColumns = array();
+				switch($aggregate)
+				{
+					case 'count':
+						$readColumns[] = "COUNT(1) as '_count'";
+						break;
+					case 'min':
+						$readColumns[] = "MIN({$aggregateVal}) as '_min'";
+						break;
+					case 'max':
+						$readColumns[] = "MAX({$aggregateVal}) as '_max'";
+						break;
+					case 'avg':
+						$readColumns[] = "AVG({$aggregateVal}) as '_avg'";
+						break;
+				}
+			}
+			else
+			{
+				$readColumns = $queryObject->getReadColumns();
+			}
 			
 			if($queryObject->getType() == 'select')
 			{
@@ -168,7 +278,18 @@ namespace application\plugin\mvcQuery
 			}
 			elseif($queryObject->getType() == 'insert')
 			{
-				$return = $model->insert($vals, $keys);
+				switch($model->insertType)
+				{
+					case self::INSERT_ASSOC:
+						$return = $model->insertAssoc($where);
+					break;
+
+					case self::INSERT_DEFAULT:
+						// fall through
+					default:
+						$return = $model->insert($vals, $keys);
+					break;
+				}
 			}
 			elseif($queryObject->getType() == 'update')
 			{
@@ -183,8 +304,22 @@ namespace application\plugin\mvcQuery
 				throw new MvcQueryException(MvcQueryException::INVALID_TYPE, " [".$queryObject->getType()."] is invalid.");
 			}
 			
+			if($debug && Nutshell::getInstance()->config->application->mode=='development')
+			{
+				$return = array($this->db->getLastQueryObject());
+			}
+			
 			return $return;
 		}
+		
+		
+		
+		
+		
+		/**********************************
+		 * Handler Pass-through functions *
+		 **********************************/
+		
 		
 		public function update($updateKeyVals,$whereKeyVals, $additionalPartSQL='')
 		{
@@ -200,10 +335,233 @@ namespace application\plugin\mvcQuery
 		{
 			return $this->handler->insert($record, $fields);
 		}
+
+		public function insertAssoc($record)
+		{
+			return $this->handler->insertAssoc($record);
+		}
 		
 		public function delete($whereKeyVals, $mvcQueryObject=null)
 		{
 			return $this->handler->delete($whereKeyVals, $mvcQueryObject);
+		}
+		
+		
+		
+		
+		
+		
+		
+		
+		/*************************
+		 * Transaction functions * 
+		 *************************/
+		
+		/**
+		 * Accepts an array with a list of ModelNames
+		 * Creates the transaction tables if they don't exist
+		 */
+		public function startTransaction($modelNames)
+		{
+			foreach($modelNames as $modelName)
+			{
+				$model			= $this->getModel($modelName, false);
+				$tableName		= $model->name;
+				if($this->isTransactionTableName($tableName)) throw new MvcQueryException("[$tableName]");
+				$tempTableName	= $this->getTransactionTableName($model->name);
+				
+				// drop the temp table if it exists -- to bad multiple simultaneous users!
+				$query = "DROP TABLE IF EXISTS {$tempTableName}";
+				$this->db->getResultFromQuery($query);
+				
+				// create a fresh table from other table's spec
+				$createTableSQL = $model->showCreateTable();
+				$createTableSQL = $this->replaceTableNameReferences($createTableSQL, $tableName);
+				$createTableSQL = preg_replace('/(CONSTRAINT).+(FOREIGN)/m', '\1 \2', $createTableSQL);
+				$this->db->getResultFromQuery($createTableSQL);
+				
+				// populate the table
+				$query = "INSERT INTO {$tempTableName} SELECT * FROM {$tableName}";
+				$this->db->getResultFromQuery($query);
+			}
+		}
+		
+		/**
+		 * Drops the transaction tables,
+		 * leaving the original tables as they were before the transaction was started
+		 */
+		public function cancelTransaction($modelNames)
+		{
+			foreach($modelNames as $modelName)
+			{
+				$model = $this->getModel($modelName);
+				if(!$model->originalName) return false;
+				$tempTableName = $model->name;
+				
+				// drop the temp table
+				$query = "DROP TABLE IF EXISTS {$tempTableName}";
+				$this->db->getResultFromQuery($query);
+			}
+		}
+		
+		/**
+		 * Accepts an array with a list of model names,
+		 * Replaces the original tables with the temp tables
+		 */
+		public function endTransaction($modelNames)
+		{
+			foreach($modelNames as $modelName)
+			{
+				if(!$this->inTransactionState($modelName)) continue;
+				
+				$model	= $this->getModel($modelName);
+				$originalTableName	= $model->originalName;
+				$tempTableName		= $model->name;
+				
+				// unsecure
+				$query = "SET FOREIGN_KEY_CHECKS = 0";
+				$this->db->getResultFromQuery($query);
+				
+				// drop the original table
+				$query = "DROP TABLE IF EXISTS {$originalTableName}";
+				$this->db->getResultFromQuery($query);
+				
+				// rename the temp into the real one
+				$query = "RENAME TABLE {$tempTableName} TO {$originalTableName}";
+				$this->db->getResultFromQuery($query);
+				
+				// resecure
+				$query = "SET FOREIGN_KEY_CHECKS = 1";
+				$this->db->getResultFromQuery($query);
+			}
+		}
+		
+		/**
+		 * Pass in a model, I will return true if that table has a transaction table
+		 */
+		public function inTransactionState($model)
+		{
+			if(is_string($model)) $model = $this->getModel($model, false);
+			$temporaryTableName = $this->getTransactionTableName($model->name);
+			return $this->tableExists($temporaryTableName);
+		}
+		
+		/**
+		 * Replaces references to the old table name with references to the new one
+		 */
+		private function replaceTableNameReferences($query, $originalTableName)
+		{
+			$temporaryTableName = $this->getTransactionTableName($originalTableName);
+			$find		= "`{$originalTableName}`";
+			$replace	= "`{$temporaryTableName}`";
+			return str_replace($find, $replace, $query);
+		}
+		
+		/**
+		 * Pass in a table name, and I will return the name of the temp table
+		 */
+		public function getTransactionTableName($tableName)
+		{
+			return '_temp_'.$tableName;
+		}
+		
+		public function isTransactionTableName($tableName)
+		{
+			return (substr($tableName, 0, 6)=='_temp_');
+		}
+		
+		/**
+		 * Modifies a model's 'name' attribute and adds an 'originalName' attribute
+		 * if the model has a transaction table
+		 */
+		private function checkModelForTransaction($model)
+		{
+			if($this->inTransactionState($model))
+			{
+				// don't double-up
+				if($this->isTransactionTableName($model->name))
+				{
+					return $model;
+				}
+				else
+				{
+					$model->originalName = $model->name;
+					$model->name = $this->getTransactionTableName($model->name);
+				}
+			}
+			return $model;
+		}
+		
+		/**
+		 * Modifies a query to update it's table name references, if the model is in a 
+		 * transactional state
+		 */
+		public function checkQueryForTransaction($query, $model)
+		{
+			if(isset($model->originalName))
+			{
+				$query = $this->replaceTableNameReferences($query, $model->originalName);
+			}
+			return $query;
+		}
+		
+		
+		
+		
+		/*********************
+		 * Utility Functions *
+		 *********************/
+		
+		public function getTableName()
+		{
+			$tableName = $this->name;
+			
+			// If this is a transaction table, return that
+			if($this->isTransactionTableName($tableName)) return $tableName;
+			
+			// If this has a transaction table, return that
+			$transactionTableName = $this->getTransactionTableName($tableName);
+			if($this->tableExists($transactionTableName)) return $transactionTableName;
+			
+			// Otherwise, just return our table name
+			return $tableName;
+		}
+		
+		public function getModel($modelName, $checkTransaction=true)
+		{
+			$parts = explode('/', $modelName);
+			$model = $this->model;
+			foreach($parts as $part)
+			{
+				$model = $model->$part;
+			}
+			
+			if($checkTransaction)
+			{
+				$model = $this->checkModelForTransaction($model);
+			}
+			elseif($this->isTransactionTableName($model->name))
+			{
+				$model->name = $model->originalName;
+				unset($model->originalName);
+			}
+			
+			return $model;
+		}
+		
+		public function tableExists($tableName)
+		{
+			$dbName	= $this->getDBName();
+			$query	= "SHOW TABLES FROM {$dbName} LIKE '{$tableName}'";
+			$result	= $this->db->getResultFromQuery($query);
+			return (sizeof($result));
+		}
+		
+		public function getDBName()
+		{
+			$config = Nutshell::getInstance()->config;
+			$connectionName = $config->plugin->Mvc->connection;
+			return $config->plugin->Db->connections->{$connectionName}->database;
 		}
 		
 		public function showCreateTable()

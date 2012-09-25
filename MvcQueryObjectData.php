@@ -24,5 +24,7 @@ namespace application\plugin\mvcQuery
 		const LIKE			= 'LIKE';
 		const GREATER_THAN	= '>';
 		const LESS_THAN		= '<';
+		const IN			= 'IN';
+		const IS			= 'IS';
 	}
 }
