@@ -174,9 +174,10 @@ namespace application\plugin\mvcQuery
 						$sort['by'] = array();
 						foreach($val as $col)
 						{
-							$sort['by'][] = str_replace("'", "`", $this->db->quote($col));
+							if($col) $sort['by'][] = str_replace("'", "`", $this->db->quote($col));
 						}
 						$sort['by'] = implode(', ', $sort['by']);
+						if(!$sort['by']) $sort['by']=1;
 					}
 					
 					if($key == "_sortDir" && is_string($val))
