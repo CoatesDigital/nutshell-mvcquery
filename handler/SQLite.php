@@ -39,7 +39,7 @@ namespace application\plugin\mvcQuery\handler
 		
 		protected function configure() {
 			if (!is_array($this->model->primary)){
-				throw new Exception('Primary Key has to be an array.');
+				throw new MvcQueryException('Primary Key has to be an array.');
 			}
 			
 			$this->model->columnNames = array_keys($this->model->columns);
@@ -215,7 +215,7 @@ SQL;
 			}
 			else
 			{
-		 		throw new Exception('$whereKeyVals is invalid. Specify an array of key value pairs or a single numeric for primay key match.');
+		 		throw new MvcQueryException('$whereKeyVals is invalid. Specify an array of key value pairs or a single numeric for primay key match.');
 			}
 		}
 		
