@@ -123,7 +123,6 @@ INSERT INTO {$dbPrefix}`{$this->model->name}`
 VALUES
 	({$placeHoldersSQL});
 SQL;
-			$query = $this->model->checkQueryForTransaction($query, $this->model);
 			return $this->model->db->insert($query, array_values($record));
 		}
 		
@@ -196,7 +195,6 @@ FROM
 	{$additionalWhereSQL}
 	{$additionalPartSQL}
 SQL;
-			$query = $this->model->checkQueryForTransaction($query, $this->model);
 			return $this->model->db->getResultFromQuery($query,$whereKeyValues);
 		}
 		
@@ -300,7 +298,6 @@ WHERE
 	{$additionalPartSQL}
 ;
 SQL;
-			$query = $this->model->checkQueryForTransaction($query, $this->model);
 			return $this->model->db->update($query,array_merge(array_values($updateKeyVals),$whereKeyValues));
 		}
 		

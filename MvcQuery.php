@@ -348,166 +348,6 @@ namespace application\plugin\mvcQuery
 		
 		
 		
-		
-		
-		
-		
-		
-		/*************************
-		 * Transaction functions * 
-		 *************************/
-		
-		/**
-		 * Accepts an array with a list of ModelNames
-		 * Creates the transaction tables if they don't exist
-		 */
-		public function startTransaction($modelNames)
-		{
-			foreach($modelNames as $modelName)
-			{
-				$model			= $this->getModel($modelName, false);
-				$tableName		= $model->name;
-				if($this->isTransactionTableName($tableName)) throw new MvcQueryException("[$tableName]");
-				$tempTableName	= $this->getTransactionTableName($model->name);
-				
-				// drop the temp table if it exists -- to bad multiple simultaneous users!
-				$query = "DROP TABLE IF EXISTS {$tempTableName}";
-				$this->db->getResultFromQuery($query);
-				
-				// create a fresh table from other table's spec
-				$createTableSQL = $model->showCreateTable();
-				$createTableSQL = $this->replaceTableNameReferences($createTableSQL, $tableName);
-				$createTableSQL = preg_replace('/(CONSTRAINT).+(FOREIGN)/m', '\1 \2', $createTableSQL);
-				$this->db->getResultFromQuery($createTableSQL);
-				
-				// populate the table
-				$query = "INSERT INTO {$tempTableName} SELECT * FROM {$tableName}";
-				$this->db->getResultFromQuery($query);
-			}
-		}
-		
-		/**
-		 * Drops the transaction tables,
-		 * leaving the original tables as they were before the transaction was started
-		 */
-		public function cancelTransaction($modelNames)
-		{
-			foreach($modelNames as $modelName)
-			{
-				$model = $this->getModel($modelName);
-				if(!$model->originalName) return false;
-				$tempTableName = $model->name;
-				
-				// drop the temp table
-				$query = "DROP TABLE IF EXISTS {$tempTableName}";
-				$this->db->getResultFromQuery($query);
-			}
-		}
-		
-		/**
-		 * Accepts an array with a list of model names,
-		 * Replaces the original tables with the temp tables
-		 */
-		public function endTransaction($modelNames)
-		{
-			foreach($modelNames as $modelName)
-			{
-				if(!$this->inTransactionState($modelName)) continue;
-				
-				$model	= $this->getModel($modelName);
-				$originalTableName	= $model->originalName;
-				$tempTableName		= $model->name;
-				
-				// unsecure
-				$query = "SET FOREIGN_KEY_CHECKS = 0";
-				$this->db->getResultFromQuery($query);
-				
-				// drop the original table
-				$query = "DROP TABLE IF EXISTS {$originalTableName}";
-				$this->db->getResultFromQuery($query);
-				
-				// rename the temp into the real one
-				$query = "RENAME TABLE {$tempTableName} TO {$originalTableName}";
-				$this->db->getResultFromQuery($query);
-				
-				// resecure
-				$query = "SET FOREIGN_KEY_CHECKS = 1";
-				$this->db->getResultFromQuery($query);
-			}
-		}
-		
-		/**
-		 * Pass in a model, I will return true if that table has a transaction table
-		 */
-		public function inTransactionState($model)
-		{
-			if(is_string($model)) $model = $this->getModel($model, false);
-			$temporaryTableName = $this->getTransactionTableName($model->name);
-			return $this->tableExists($temporaryTableName);
-		}
-		
-		/**
-		 * Replaces references to the old table name with references to the new one
-		 */
-		private function replaceTableNameReferences($query, $originalTableName)
-		{
-			$temporaryTableName = $this->getTransactionTableName($originalTableName);
-			$find		= "`{$originalTableName}`";
-			$replace	= "`{$temporaryTableName}`";
-			return str_replace($find, $replace, $query);
-		}
-		
-		/**
-		 * Pass in a table name, and I will return the name of the temp table
-		 */
-		public function getTransactionTableName($tableName)
-		{
-			return '_temp_'.$tableName;
-		}
-		
-		public function isTransactionTableName($tableName)
-		{
-			return (substr($tableName, 0, 6)=='_temp_');
-		}
-		
-		/**
-		 * Modifies a model's 'name' attribute and adds an 'originalName' attribute
-		 * if the model has a transaction table
-		 */
-		private function checkModelForTransaction($model)
-		{
-			if($this->inTransactionState($model))
-			{
-				// don't double-up
-				if($this->isTransactionTableName($model->name))
-				{
-					return $model;
-				}
-				else
-				{
-					$model->originalName = $model->name;
-					$model->name = $this->getTransactionTableName($model->name);
-				}
-			}
-			return $model;
-		}
-		
-		/**
-		 * Modifies a query to update it's table name references, if the model is in a 
-		 * transactional state
-		 */
-		public function checkQueryForTransaction($query, $model)
-		{
-			if(isset($model->originalName))
-			{
-				$query = $this->replaceTableNameReferences($query, $model->originalName);
-			}
-			return $query;
-		}
-		
-		
-		
-		
 		/*********************
 		 * Utility Functions *
 		 *********************/
@@ -515,35 +355,16 @@ namespace application\plugin\mvcQuery
 		public function getTableName()
 		{
 			$tableName = $this->name;
-			
-			// If this is a transaction table, return that
-			if($this->isTransactionTableName($tableName)) return $tableName;
-			
-			// If this has a transaction table, return that
-			$transactionTableName = $this->getTransactionTableName($tableName);
-			if($this->tableExists($transactionTableName)) return $transactionTableName;
-			
-			// Otherwise, just return our table name
 			return $tableName;
 		}
 		
-		public function getModel($modelName, $checkTransaction=true)
+		public function getModel($modelName)
 		{
 			$parts = explode('/', $modelName);
 			$model = $this->model;
 			foreach($parts as $part)
 			{
 				$model = $model->$part;
-			}
-			
-			if($checkTransaction)
-			{
-				$model = $this->checkModelForTransaction($model);
-			}
-			elseif($this->isTransactionTableName($model->name))
-			{
-				$model->name = $model->originalName;
-				unset($model->originalName);
 			}
 			
 			return $model;
