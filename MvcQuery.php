@@ -102,17 +102,17 @@ namespace application\plugin\mvcQuery
 			$connectionName	= $config->plugin->Mvc->connection;
 			$handlerName	= $config->plugin->Db->connections->$connectionName->handler;
 			
-			if($handlerName == 'mysql')
+			if(strtolower($handlerName) == 'mysql')
 			{
 				$this->handler = new MySQL($this);
 			}
-			elseif($handlerName == 'sqlite')
+			elseif(strtolower($handlerName) == 'sqlite')
 			{
 				$this->handler = new SQLite($this);
 			}
 			else
 			{
-				MvcQueryException(MvcQueryException::INVALID_HANDLER, $connectionName, $handlerName);
+				throw new MvcQueryException(MvcQueryException::INVALID_HANDLER, $connectionName, $handlerName);
 			}
 		}
 		
