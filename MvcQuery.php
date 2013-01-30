@@ -92,12 +92,6 @@ namespace application\plugin\mvcQuery
 		public function __construct()
 		{
 			parent::__construct();
-			require_once(__DIR__._DS_.'MvcQueryObject.php');
-			require_once(__DIR__._DS_.'MvcQueryObjectData.php');
-			require_once(__DIR__._DS_.'MvcQueryException.php');
-			require_once(__DIR__._DS_.'handler'._DS_.'SQLite.php');
-			require_once(__DIR__._DS_.'handler'._DS_.'MySQL.php');
-		
 			$config			= Nutshell::getInstance()->config;
 			$connectionName	= $config->plugin->Mvc->connection;
 			$handlerName	= $config->plugin->Db->connections->$connectionName->handler;
