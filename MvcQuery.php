@@ -400,5 +400,21 @@ namespace application\plugin\mvcQuery
 			}
 			return $array;
 		}
+
+		public function save()
+		{
+			$record = $this->toArray();
+			$existing = $this->read(array('id'=>$record['id']));
+			if(sizeof($existing))
+			{
+				$existing = $existing[0];
+				$where = array('id'=>$existing['id']);
+				$this->update($record, $where);
+			}
+			else
+			{
+				$this->insertAssoc($record);
+			}
+		}
 	}
 }
