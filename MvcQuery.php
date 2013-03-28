@@ -390,5 +390,15 @@ namespace application\plugin\mvcQuery
 			if(!$queryObject->getModel()) throw new MvcQueryException(MvcQueryException::NEEDS_TABLE);
 			if(!$queryObject->getType()) throw new MvcQueryException(MvcQueryException::NEEDS_TYPE);
 		}
+
+		public function toArray()
+		{
+			$array = array();
+			foreach($this->columnNames as $columnName)
+			{
+				$array[$columnName] = $this->$columnName;
+			}
+			return $array;
+		}
 	}
 }
