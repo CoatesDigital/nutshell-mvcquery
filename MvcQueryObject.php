@@ -75,10 +75,17 @@ namespace application\plugin\mvcQuery
 			$this->where = $where;
 		}
 		
+		public function addWhere($where)
+		{
+			$catenator = $this->getWhere() ? "\nAND" : "\nWHERE";
+			$this->setWhere($this->getWhere() . $catenator . $where);
+		}
+		
 		public function getWhere()
 		{
 			return $this->where;
 		}
+		
 		
 		private $data = null;
 		
@@ -105,6 +112,11 @@ namespace application\plugin\mvcQuery
 			$this->readColumns = $readColumns;
 		}
 		
+		public function addreadColumns($readColumns)
+		{
+			$this->setReadColumns(array_merge($this->getReadColumns(), $readColumns));
+		}
+		
 		public function getReadColumns()
 		{
 			return $this->readColumns;
@@ -121,6 +133,11 @@ namespace application\plugin\mvcQuery
 			$this->additionalPartSQL = $additionalPartSQL;
 		}
 		
+		public function addAdditionalPartSQL($additionalPartSQL)
+		{
+			$this->setAdditionalPartSQL($this->getAdditionalPartSQL()."\n".$additionalPartSQL);
+		}
+		
 		public function getAdditionalPartSQL()
 		{
 			return $this->additionalPartSQL;
@@ -135,6 +152,11 @@ namespace application\plugin\mvcQuery
 		public function setJoinPartSQL($joinPartSQL)
 		{
 			$this->joinPartSQL = $joinPartSQL;
+		}
+		
+		public function addJoinPartSQL($joinPartSQL)
+		{
+			$this->setJoinPartSQL($this->getJoinPartSQL()."\n".$joinPartSQL);
 		}
 		
 		public function getJoinPartSQL()
@@ -162,6 +184,7 @@ namespace application\plugin\mvcQuery
 		/**
 		 * Additional SQL to perform after the WHERE clause.
 		 * Either "WHERE" or "AND" will be appended to this
+		 * Todo: remove
 		 */
 		private $additionalWhereSQL = '';
 		
