@@ -413,7 +413,8 @@ namespace application\plugin\mvcQuery
 			}
 			else
 			{
-				$this->insertAssoc($record);
+				$id = $this->insertAssoc($record);
+				$this->id = $id;
 			}
 		}
 	}
