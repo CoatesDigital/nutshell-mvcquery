@@ -7,6 +7,7 @@ namespace application\plugin\mvcQuery
 	use application\plugin\mvcQuery\handler\SQLite;
 	use nutshell\plugin\mvc\Model;
 	use nutshell\Nutshell;
+	use nutshell\core\exception\NutshellException;
 	
 	/**
 	 * Provides functions to interface with the database
@@ -414,6 +415,29 @@ namespace application\plugin\mvcQuery
 			else
 			{
 				$this->insertAssoc($record);
+			}
+		}
+		
+		public static function executeSQLDump($file)
+		{
+			$config = Nutshell::getInstance()->config;
+			$dbConfig = $config->plugin->Db->connections->{$config->plugin->Mvc->connection};
+			$passwordSegment = $dbConfig->password == '' ? '' : '-p' . $dbConfig->password;
+
+			$command = sprintf
+			(
+				"mysql -u %s %s %s < \"%s\"",
+				$dbConfig->username,
+				$passwordSegment,
+				$dbConfig->database,
+				$file
+			);
+			
+			
+			exec($command, $output, $return);
+			if($return !== 0)
+			{
+				throw new NutshellException('Executing command failed', "command:",$command, "output:",$output, "return:",$return);
 			}
 		}
 	}
