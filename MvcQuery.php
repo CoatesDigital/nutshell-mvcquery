@@ -142,6 +142,7 @@ namespace application\plugin\mvcQuery
 			$aggregateVal = false;
 			$debug = false;
 			$additionalPartSQL = $queryObject->getAdditionalPartSQL();
+			$sortPartSQL = $queryObject->getSortPartSQL();
 			$data = $queryObject->getWhere();
 			if(!$data) $data = array();
 			$limit=array('offset'=>null,'limit'=>null);
@@ -217,8 +218,11 @@ namespace application\plugin\mvcQuery
 				}
 			}
 			
-			
-			if (!is_null($sort['by']))
+			if($sortPartSQL)
+			{
+				$additionalPartSQL.= $sortPartSQL;
+			}
+			elseif (!is_null($sort['by']))
 			{
 				if (!is_null($sort['dir']))
 				{

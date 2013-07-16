@@ -198,5 +198,18 @@ namespace application\plugin\mvcQuery
 		    $this->additionalWhereSQL = $additionalWhereSQL;
 		}
 		
+		
+		private $sortPartSQL = '';
+		
+		public function getSortPartSQL()
+		{
+		    return $this->sortPartSQL;
+		}
+		
+		public function setSortPartSQL($sortPartSQL)
+		{
+		    $this->sortPartSQL = $sortPartSQL;
+		}
+		
 	}
 }
