@@ -144,7 +144,7 @@ SQL;
 			{
 				// filters by the given where
 				$this->getWhereSQL($whereKeyVals, $whereKeySQL, $whereKeyValues);
-				$whereKeySQL = " WHERE ".$whereKeySQL;
+				$whereKeySQL = " WHERE BINARY ".$whereKeySQL;
 			} 
 			
 			// Is a additional SQL parts?
