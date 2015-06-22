@@ -133,7 +133,6 @@ namespace application\plugin\mvcQuery
 			$this->checkQueryData($queryObject);
 			$model = $queryObject->getModel();
 			
-			
 			// Parse the 'where' part to get the 'where' and 'additionalPartSQL' arguments
 			$vals = array();
 			$keys = array();
@@ -147,6 +146,7 @@ namespace application\plugin\mvcQuery
 			if(!$data) $data = array();
 			$limit=array('offset'=>null,'limit'=>null);
 			$sort=array('by'=>1,'dir'=>null);
+			
 			foreach($data as $key => $val)
 			{
 				if($key[0] == '_') // It's some meta data
@@ -163,6 +163,7 @@ namespace application\plugin\mvcQuery
 					
 					if($key == "_sortBy" && is_string($val))
 					{
+						if(!isset($model->columns[$val])) throw new MvcQueryException("Invalid column [$val]", $model->columns, $data, $additionalPartSQL, $sortPartSQL);
 						$sort['by']=str_replace("'", "`", $this->db->quote($val));
 					}
 					if($key == "_sortBy" && is_array($val))
@@ -170,6 +171,7 @@ namespace application\plugin\mvcQuery
 						$sort['by'] = array();
 						foreach($val as $col)
 						{
+							if($col && !isset($model->columns[$col])) throw new MvcQueryException("Invalid column [$col]", $model->columns, $data, $additionalPartSQL, $sortPartSQL);
 							if($col) $sort['by'][] = str_replace("'", "`", $this->db->quote($col));
 						}
 						$sort['by'] = implode(', ', $sort['by']);
@@ -178,6 +180,7 @@ namespace application\plugin\mvcQuery
 					
 					if($key == "_sortDir" && is_string($val))
 					{
+						if(!in_array($val, array("ASC", "DESC"))) throw new MvcQueryException("Invalid sort dir [$val]", $model->columns, $data, $additionalPartSQL, $sortPartSQL);
 						$sort['dir']=str_replace("'", "", $this->db->quote($val));
 					}
 					
@@ -186,20 +189,23 @@ namespace application\plugin\mvcQuery
 						$aggregate = 'count';
 					}
 					
-					if($key == "_min" && $val)
+					if($key == "_min" && is_string($val))
 					{
+						if(!isset($model->columns[$val])) throw new MvcQueryException("Invalid column [$val]", $model->columns, $data, $additionalPartSQL, $sortPartSQL);
 						$aggregate = 'min';
 						$aggregateVal = $val;
 					}
 					
-					if($key == "_max" && $val)
+					if($key == "_max" && is_string($val))
 					{
+						if(!isset($model->columns[$val])) throw new MvcQueryException("Invalid column [$val]", $model->columns, $data, $additionalPartSQL, $sortPartSQL);
 						$aggregate = 'max';
 						$aggregateVal = $val;
 					}
 					
-					if($key == "_avg" && $val)
+					if($key == "_avg" && is_string($val))
 					{
+						if(!isset($model->columns[$val])) throw new MvcQueryException("Invalid column [$val]", $model->columns, $data, $additionalPartSQL, $sortPartSQL);
 						$aggregate = 'avg';
 						$aggregateVal = $val;
 					}
@@ -212,8 +218,9 @@ namespace application\plugin\mvcQuery
 				}
 				else
 				{
-					$keys[] = $key;
-					$vals[] = $val;
+					if(is_string($key) && !isset($model->columns[$key])) throw new MvcQueryException("Invalid column [$key]", $model->columns, $data, $additionalPartSQL, $sortPartSQL);
+					$keys[] = $key; // These must be sanitised above
+					$vals[] = $val; // These will be sanitised by PDO's prepared statements
 					$where[$key] = $val;
 				}
 			}
