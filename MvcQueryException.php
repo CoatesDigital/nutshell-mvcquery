@@ -25,6 +25,9 @@ namespace application\plugin\mvcQuery
 		
 		/** CRUD Model is misconfigured. Name, Primary Key and Columns must be defined. */
 		const MODEL_MISCONFIGURED = 6;
+		
+		/** Field names must not contain illegal characters. */
+		const ILLEGAL_FIELD_NAME = 7;
 	}
 }
 ?>
